@@ -8,152 +8,209 @@
 import SwiftUI
 import FirebaseAuth
 
+/// Screen for creating a new Firebase account.
 struct CreateAccountView: View {
-    // MARK: - State variables for user input
+    
+    // MARK: - Environment
+    @EnvironmentObject var authService: AuthService
+    @Environment(\.dismiss) private var dismiss
+    
+    // MARK: - User Inputs
+    @State private var fullName: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
     
-    // MARK: - State variables for UI control
-    @State private var isCreating: Bool = false          // Controls loading spinner visibility
-    @State private var creationError: String? = nil      // Displays error messages
-    @State private var navigateToHome: Bool = false      // Triggers navigation after success
+    // MARK: - UI State
+    @State private var localError: String?
+    @State private var isCreating: Bool = false
     
-    // MARK: - Main View
+    // MARK: - Validation
+    private var isEmailValid: Bool {
+        email.contains("@") && email.contains(".")
+    }
+    
+    private var canCreateAccount: Bool {
+        !fullName.trimmingCharacters(in: .whitespaces).isEmpty &&
+        isEmailValid &&
+        password.count >= 6 &&
+        password == confirmPassword &&
+        !isCreating
+    }
+    
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // MARK: - Background gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [.purple.opacity(0.8), .blue.opacity(0.8)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+        ZStack {
+            
+            LinearGradient.esPrimaryGradient
                 .ignoresSafeArea()
-                
-                VStack(spacing: 25) {
+            
+            ScrollView {
+                VStack(spacing: 24) {
                     
-                    Spacer(minLength: 40)
-                    
-                    // MARK: - Header / App title
+                    // MARK: Header
                     VStack(spacing: 8) {
                         Image(systemName: "person.crop.circle.badge.plus")
                             .font(.system(size: 60))
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .shadow(radius: 8)
                         
                         Text("Create Account")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                    }
-                    
-                    // MARK: - Input fields
-                    VStack(spacing: 15) {
-                        // Email
-                        TextField("Email", text: $email)
-                            .textFieldStyle(.roundedBorder)
-                            .textInputAutocapitalization(.never) // ✅ modern API
-                            .disableAutocorrection(true)
-                            .keyboardType(.emailAddress)
-                            .padding(.horizontal)
+                            .font(.largeTitle.bold())
+                            .foregroundStyle(.white)
                         
-                        // Password
-                        SecureField("Password", text: $password)
-                            .textFieldStyle(.roundedBorder)
-                            .padding(.horizontal)
-                        
-                        // Confirm password
-                        SecureField("Confirm Password", text: $confirmPassword)
-                            .textFieldStyle(.roundedBorder)
-                            .padding(.horizontal)
-                    }
-                    
-                    // MARK: - Create Account button
-                    Button(action: createAccountTapped) {
-                        HStack {
-                            if isCreating {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Text("Create Account")
-                                    .font(.headline)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.white.opacity(0.9))
-                        .foregroundColor(.blue)
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-                        .shadow(radius: 5)
-                    }
-                    // Disable button if invalid input or while loading
-                    .disabled(!canCreateAccount || isCreating)
-                    
-                    // MARK: - Error message
-                    if let creationError = creationError {
-                        Text(creationError)
-                            .foregroundColor(.red)
-                            .font(.footnote)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 20)
-                    }
-                    
-                    // MARK: - Back to Sign In link
-                    NavigationLink(destination: SignInView()) {
-                        Text("Already have an account? Sign In")
+                        Text("Set up your account to start splitting expenses.")
                             .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.9))
-                            .underline()
+                            .foregroundStyle(.white.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
                     }
-                    .padding(.top, 10)
+                    .padding(.top, 40)
                     
-                    Spacer()
+                    
+                    // MARK: Card
+                    ESCard {
+                        VStack(spacing: 16) {
+                            
+                            if let error = localError {
+                                Text(error)
+                                    .foregroundColor(.red)
+                                    .multilineTextAlignment(.center)
+                                    .font(.footnote)
+                            }
+                            
+                            // Full Name
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Full Name")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                TextField("Your name", text: $fullName)
+                                    .textInputAutocapitalization(.words)
+                                    .textFieldStyle(ESInputFieldStyle())
+                            }
+                            
+                            // Email
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Email")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                TextField("you@example.com", text: $email)
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .disableAutocorrection(true)
+                                    .textFieldStyle(ESInputFieldStyle())
+                            }
+                            
+                            // Password
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
+                                    Text("Password")
+                                    Spacer()
+                                    if password.count > 0 && password.count < 6 {
+                                        Text("min 6 chars")
+                                            .font(.caption2)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                SecureField("Enter password", text: $password)
+                                    .textInputAutocapitalization(.never)
+                                    .textFieldStyle(ESInputFieldStyle())
+                            }
+                            
+                            // Confirm Password
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Confirm Password")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                SecureField("Re-enter password", text: $confirmPassword)
+                                    .textInputAutocapitalization(.never)
+                                    .textFieldStyle(ESInputFieldStyle())
+                            }
+                            
+                            
+                            Button {
+                                Task { await createAccount() }
+                            } label: {
+                                HStack(spacing: 8) {
+                                    if isCreating {
+                                        ProgressView().tint(.white)
+                                    }
+                                    Text(isCreating ? "Creating..." : "Create Account")
+                                        .font(.headline)
+                                }
+                            }
+                            .buttonStyle(ESPrimaryButtonStyle())
+                            .disabled(!canCreateAccount)
+                            
+                            
+                            Button { dismiss() } label: {
+                                Text("Already have an account? Sign In")
+                                    .font(.footnote)
+                                    .foregroundColor(.esPrimary)
+                                    .underline()
+                            }
+                            .padding(.top, 4)
+                        }
+                    }
+                    .padding(.horizontal)
+                    
+                    Spacer(minLength: 20)
                 }
-            }
-            // MARK: - Navigate to HomeView after success
-            .navigationDestination(isPresented: $navigateToHome) {
-                HomeView()
             }
         }
     }
     
-    // MARK: - Computed property to enable button only if valid
-    private var canCreateAccount: Bool {
-        // Basic validation: fields not empty and passwords match
-        !email.isEmpty && !password.isEmpty && password == confirmPassword
-    }
-    
-    // MARK: - Firebase create account logic
-    private func createAccountTapped() {
+    // MARK: - Sign Up Logic
+    private func createAccount() async {
         guard canCreateAccount else {
-            creationError = "Passwords do not match or fields are empty."
+            localError = "Please fill all fields correctly."
             return
         }
         
-        creationError = nil
+        localError = nil
         isCreating = true
         
-        // Call Firebase Auth via AuthService helper
-        AuthService.shared.signUp(email: email, password: password) { result in
-            DispatchQueue.main.async {
-                isCreating = false
-                switch result {
-                case .success(_):
-                    // ✅ Delay a bit for smooth navigation animation
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        navigateToHome = true
+        do {
+            // 1. Create Firebase user
+            let user = try await authService.signUp(email: email, password: password)
+            
+            // 2. Update display name in Firebase Auth
+            let changeRequest = user.createProfileChangeRequest()
+            changeRequest.displayName = fullName
+            
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
+                changeRequest.commitChanges { error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume()
                     }
-                case .failure(let error):
-                    creationError = error.localizedDescription
                 }
             }
+            
+            // ⭐ 3. Save profile to Realtime Database
+            let userService = UserService()
+            try await userService.saveUserProfile(
+                uid: user.uid,
+                fullName: fullName,
+                email: email
+            )
+            
+            isCreating = false
+            
+        } catch {
+            isCreating = false
+            localError = error.localizedDescription
         }
     }
 }
 
-// MARK: - Preview for SwiftUI Canvas
 #Preview {
-    CreateAccountView()
+    NavigationStack {
+        CreateAccountView()
+            .environmentObject(AuthService.shared)
+    }
 }

@@ -6,40 +6,24 @@
 //
 
 import SwiftUI
-import FirebaseAuth
 
-/// The RootView decides which screen to show based on authentication state.
+/// RootView chooses between:
+/// - SignInView when logged out
+/// - ContentView (tabs) when logged in
 struct RootView: View {
-    // MARK: - State to track authentication status
-    @State private var isLoggedIn = Auth.auth().currentUser != nil
-    @State private var showWelcome = true  // To show Welcome screen first
+    @EnvironmentObject var authService: AuthService
     
     var body: some View {
         NavigationStack {
-            if showWelcome {
-                // First screen: Welcome
-                WelcomeView(onGetStarted: {
-                    showWelcome = false
-                })
+            if authService.isAuthenticated {
+                ContentView()
             } else {
-                if isLoggedIn {
-                    // Once logged in → go to Home (ContentView)
-                    ContentView()
-                        .onAppear {
-                            // Keep checking auth changes dynamically
-                            Auth.auth().addStateDidChangeListener { _, user in
-                                isLoggedIn = (user != nil)
-                            }
-                        }
-                } else {
-                    // Not logged in → show SignInView
-                    SignInView()
-                }
+                SignInView()
             }
         }
     }
 }
-
 #Preview {
     RootView()
+        .environmentObject(AuthService.shared)
 }

@@ -1,0 +1,164 @@
+[
+ 
+{
+  "users": {
+    "uid001": {
+      "fullName": "Louise Rennick",
+      "email": "louise@example.com",
+      "phone": "123-456-7890",
+      "location": "Mississauga, ON",
+      "bio": "Instructor and app developer exploring Firebase with SwiftUI."
+    },
+    "uid002": {
+      "fullName": "Alice Smith",
+      "email": "alice.smith@example.com",
+      "phone": "416-555-1234",
+      "location": "Toronto, ON",
+      "bio": "Loves travel and food. Frequent trip planner."
+    },
+    "uid003": {
+      "fullName": "Bob Johnson",
+      "email": "bob.johnson@example.com",
+      "phone": "905-555-2222",
+      "location": "Hamilton, ON",
+      "bio": "Always pays for coffee. Team player!"
+    },
+    "uid004": {
+      "fullName": "Charlie Patel",
+      "email": "charlie.patel@example.com",
+      "phone": "647-555-9090",
+      "location": "Brampton, ON",
+      "bio": "Tech enthusiast and movie night organizer."
+    }
+  },
+ 
+  "groups": {
+    "group001": {
+      "name": "Weekend Trip",
+      "description": "Niagara Falls weekend getaway with friends.",
+      "currency": "CAD",
+      "createdBy": "uid001",
+      "dateCreated": "2025-10-25",
+      "members": {
+        "uid001": true,
+        "uid002": true,
+        "uid003": true
+      }
+    },
+    "group002": {
+      "name": "Movie Night",
+      "description": "Monthly movie night expenses at Cineplex.",
+      "currency": "CAD",
+      "createdBy": "uid004",
+      "dateCreated": "2025-09-15",
+      "members": {
+        "uid001": true,
+        "uid004": true
+      }
+    },
+    "group003": {
+      "name": "Office Lunch Club",
+      "description": "Rotating weekly lunches among coworkers.",
+      "currency": "CAD",
+      "createdBy": "uid002",
+      "dateCreated": "2025-11-01",
+      "members": {
+        "uid001": true,
+        "uid002": true,
+        "uid003": true,
+        "uid004": true
+      }
+    }
+  },
+ 
+  "expenses": {
+    "expense001": {
+      "groupId": "group001",
+      "title": "Hotel Stay",
+      "category": "Travel",
+      "subcategory": "Hotel",
+      "amount": 400.00,
+      "paidBy": "uid001",
+      "date": "2025-10-26",
+      "place": "Hilton Niagara",
+      "note": "2 nights shared room",
+      "currency": "CAD",
+      "splits": {
+        "uid001": 133.33,
+        "uid002": 133.33,
+        "uid003": 133.33
+      }
+    },
+    "expense002": {
+      "groupId": "group001",
+      "title": "Dinner Out",
+      "category": "Food & Drinks",
+      "subcategory": "Dining out",
+      "amount": 150.00,
+      "paidBy": "uid002",
+      "date": "2025-10-25",
+      "place": "Skylon Tower",
+      "note": "Group dinner",
+      "currency": "CAD",
+      "splits": {
+        "uid001": 50.00,
+        "uid002": 50.00,
+        "uid003": 50.00
+      }
+    },
+    "expense003": {
+      "groupId": "group002",
+      "title": "Movie Tickets",
+      "category": "Entertainment",
+      "subcategory": "Movie",
+      "amount": 48.00,
+      "paidBy": "uid004",
+      "date": "2025-09-16",
+      "place": "Cineplex Brampton",
+      "note": "Two tickets and popcorn",
+      "currency": "CAD",
+      "splits": {
+        "uid001": 24.00,
+        "uid004": 24.00
+      }
+    },
+    "expense004": {
+      "groupId": "group003",
+      "title": "Pizza Friday",
+      "category": "Food & Drinks",
+      "subcategory": "Groceries",
+      "amount": 60.00,
+      "paidBy": "uid003",
+      "date": "2025-11-01",
+      "place": "Domino’s Pizza",
+      "note": "Team lunch special",
+      "currency": "CAD",
+      "splits": {
+        "uid001": 15.00,
+        "uid002": 15.00,
+        "uid003": 15.00,
+        "uid004": 15.00
+      }
+    },
+    "expense005": {
+      "groupId": "group003",
+      "title": "Coffee Supplies",
+      "category": "Home",
+      "subcategory": "Household supplies",
+      "amount": 30.00,
+      "paidBy": "uid001",
+      "date": "2025-11-03",
+      "place": "Starbucks",
+      "note": "Office coffee beans and milk",
+      "currency": "CAD",
+      "splits": {
+        "uid001": 7.50,
+        "uid002": 7.50,
+        "uid003": 7.50,
+        "uid004": 7.50
+      }
+    }
+  }
+}
+ 
+]

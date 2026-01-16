@@ -8,46 +8,52 @@
 import SwiftUI
 
 struct ContentView: View {
-    // MARK: - Body
     var body: some View {
-        // A `TabView` provides tab-based navigation at the bottom of the screen.
         TabView {
-            
-            // MARK: - 1️⃣ Home Screen
-            HomeView()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
-                .tag(0)
-            
-            // MARK: - 2️⃣ Create New Group
-            CreateGroupView()
-                .tabItem {
-                    Label("Add Group", systemImage: "plus.circle.fill")
-                }
-                .tag(1)
-            
-            // MARK: - 3️⃣ Reports / Summary Screen
-            ReportsView()
-                .tabItem {
-                    Label("Reports", systemImage: "chart.bar.fill")
-                }
-                .tag(2)
-            
-            // MARK: - 4️⃣ Profile / Settings Screen
-            SettingsView()
-                .tabItem {
-                    Label("Profile", systemImage: "person.crop.circle.fill")
-                }
-                .tag(3)
+
+            // MARK: - Home
+            NavigationStack {
+                HomeView()
+            }
+            .tabItem {
+                Label("Home", systemImage: "house.fill")
+            }
+            .tag(0)
+
+            // MARK: - Friends
+            NavigationStack {
+                FriendsView()
+            }
+            .tabItem {
+                Label("Friends", systemImage: "person.2.fill")
+            }
+            .tag(1)
+
+            // MARK: - Reports
+            NavigationStack {
+                ReportsView()
+            }
+            .tabItem {
+                Label("Reports", systemImage: "chart.bar.fill")
+            }
+            .tag(2)
+
+            // MARK: - Settings
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem {
+                Label("Settings", systemImage: "gearshape.fill")
+            }
+            .tag(3)
         }
-        // You can customize tab bar appearance if desired
-        .tint(.blue) // Changes the selected tab color
-        .navigationBarBackButtonHidden(true) // <-- Hide back button if shown in a nav stack
+        .tint(.blue)   // will connect to AppTheme later
+        .navigationBarBackButtonHidden(true)
     }
 }
 
-// MARK: - Preview
 #Preview {
     ContentView()
+        .environmentObject(AuthService.shared)
+        .environmentObject(ProfileViewModel())
 }

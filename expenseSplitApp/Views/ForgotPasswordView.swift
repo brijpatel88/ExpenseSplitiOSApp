@@ -6,118 +6,145 @@
 //
 
 import SwiftUI
-import FirebaseAuth //Here Import FirebaseAuth
+import FirebaseAuth
 
 struct ForgotPasswordView: View {
-    // MARK: - State variables
-    @State private var email: String = ""                  // stores user input email
-    @State private var message: String? = nil              // success or error message text
-    @State private var isSending: Bool = false             // loading indicator control
     
-    // MARK: - Main View Body
+    // MARK: - Environment
+    @Environment(\.dismiss) private var dismiss
+    
+    // MARK: - State
+    @State private var email: String = ""
+    @State private var isSending: Bool = false
+    @State private var errorMessage: String?
+    @State private var successMessage: String?
+    
+    // Validation
+    private var isEmailValid: Bool {
+        email.contains("@") && email.contains(".")
+    }
+    
+    private var canSend: Bool {
+        isEmailValid && !isSending
+    }
+    
     var body: some View {
         ZStack {
-            // MARK: - Background gradient
-            LinearGradient(
-                gradient: Gradient(colors: [.blue.opacity(0.8), .purple.opacity(0.8)]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
             
-            VStack(spacing: 30) {
-                Spacer(minLength: 40)
-                
-                // MARK: - Header section
-                VStack(spacing: 8) {
-                    Image(systemName: "lock.rotation")
-                        .font(.system(size: 60))
-                        .foregroundColor(.white)
-                        .shadow(radius: 8)
+            // MARK: - THEME BACKGROUND
+            LinearGradient.esPrimaryGradient
+                .ignoresSafeArea()
+            
+            ScrollView {
+                VStack(spacing: 24) {
                     
-                    Text("Forgot Password?")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                    // MARK: Header
+                    VStack(spacing: 8) {
+                        Image(systemName: "lock.rotation")
+                            .font(.system(size: 60))
+                            .foregroundStyle(.white)
+                            .shadow(radius: 10)
+                        
+                        Text("Reset Password")
+                            .font(.largeTitle.bold())
+                            .foregroundStyle(.white)
+                        
+                        Text("Enter your email and we will send you a password reset link.")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                    }
+                    .padding(.top, 40)
                     
-                    Text("Enter your registered email below to receive a password reset link.")
-                        .font(.body)
-                        .foregroundColor(.white.opacity(0.9))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 30)
-                }
-                
-                // MARK: - Email input field
-                TextField("Enter your email", text: $email)
-                    .textFieldStyle(.roundedBorder)
-                    .autocapitalization(.none)
-                    .keyboardType(.emailAddress)
-                    .disableAutocorrection(true)
-                    .padding(.horizontal)
-                    .padding(.top, 10)
-                
-                // MARK: - Send reset link button
-                Button(action: sendPasswordReset) {
-                    HStack {
-                        if isSending {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text("Send Reset Link")
-                                .font(.headline)
+                    
+                    // MARK: Card
+                    ESCard {
+                        VStack(spacing: 20) {
+                            
+                            // Errors
+                            if let error = errorMessage {
+                                Text(error)
+                                    .foregroundColor(.red)
+                                    .multilineTextAlignment(.center)
+                                    .font(.footnote)
+                            }
+                            
+                            // Success
+                            if let success = successMessage {
+                                Text(success)
+                                    .foregroundColor(.green)
+                                    .multilineTextAlignment(.center)
+                                    .font(.footnote)
+                            }
+                            
+                            // Email Field
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Email")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                TextField("you@example.com", text: $email)
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .disableAutocorrection(true)
+                                    .textFieldStyle(ESInputFieldStyle())
+                            }
+                            
+                            
+                            // MARK: Send Reset Button
+                            Button(action: sendResetLink) {
+                                HStack {
+                                    if isSending {
+                                        ProgressView().tint(.white)
+                                    }
+                                    Text(isSending ? "Sending..." : "Send Reset Link")
+                                        .font(.headline)
+                                }
+                            }
+                            .buttonStyle(ESPrimaryButtonStyle())
+                            .disabled(!canSend)
+                            
+                            
+                            // Back button
+                            Button { dismiss() } label: {
+                                Text("Back to Sign In")
+                                    .font(.footnote)
+                                    .underline()
+                                    .foregroundColor(.esPrimary)
+                            }
+                            .padding(.top, 4)
+                            
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white.opacity(0.9))
-                    .foregroundColor(.blue)
-                    .cornerRadius(12)
                     .padding(.horizontal)
-                    .shadow(radius: 5)
+                    
+                    Spacer(minLength: 20)
                 }
-                .disabled(email.isEmpty) // disabled until user types an email
-                
-                // MARK: - Message section
-                if let message = message {
-                    Text(message)
-                        .font(.subheadline)
-                        .foregroundColor(message.contains("sent") ? .green : .red)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 5)
-                }
-                
-                // MARK: - Back to Sign In link
-                NavigationLink(destination: SignInView()) {
-                    Text("Back to Sign In")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.9))
-                        .underline()
-                }
-                .padding(.top, 15)
-                
-                Spacer()
             }
         }
     }
     
-    // MARK: - Firebase reset password logic
-    private func sendPasswordReset() {
-        guard !email.isEmpty else { return }
+    
+    // MARK: - Send Reset Logic
+    private func sendResetLink() {
+        guard isEmailValid else {
+            errorMessage = "Please enter a valid email."
+            return
+        }
         
+        errorMessage = nil
+        successMessage = nil
         isSending = true
-        message = nil
         
-        // Call Firebase's built-in method to send reset email
         Auth.auth().sendPasswordReset(withEmail: email) { error in
             DispatchQueue.main.async {
                 isSending = false
+                
                 if let error = error {
-                    // Display readable Firebase error message
-                    message = error.localizedDescription
+                    errorMessage = error.localizedDescription
                 } else {
-                    // Show success confirmation
-                    message = "Password reset link has been sent to your email."
+                    successMessage = "A reset link has been sent to your email."
                 }
             }
         }
@@ -125,6 +152,7 @@ struct ForgotPasswordView: View {
 }
 
 #Preview {
-    ForgotPasswordView()
+    NavigationStack {
+        ForgotPasswordView()
+    }
 }
-

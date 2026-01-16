@@ -6,280 +6,199 @@
 //
 
 import SwiftUI
-import FirebaseAuth // ✅ Import Firebase Authentication framework
+import FirebaseAuth
 
+/// Sign-in screen for the app.
+/// Uses AuthService to sign the user in, then RootView switches to ContentView.
 struct SignInView: View {
-    // MARK: - UI State Variables
-    @State private var email: String = ""               // User's email input
-    @State private var password: String = ""            // User's password input
-    @State private var showPassword: Bool = false       // Toggles show/hide password
-    @State private var isSigningIn: Bool = false        // Controls loading spinner
-    @State private var signInError: String? = nil       // Stores any Firebase error message
-
-    // MARK: - Navigation States
-    @State private var goToCreateAccount = false        // Navigate to Create Account
-    @State private var goToForgotPassword = false       // Navigate to Forgot Password
-    @State private var navigateToHome = false           // Navigate to Home after successful sign-in
-    @State private var navigateToSkip = false           // Navigate to SkipSignInView
-
-    // MARK: - Form Validation
+    
+    // MARK: - Environment
+    @EnvironmentObject var authService: AuthService
+    
+    // MARK: - UI State
+    @State private var email: String = ""
+    @State private var password: String = ""
+    @State private var showPassword: Bool = false
+    @State private var isSigningIn: Bool = false
+    @State private var errorMessage: String?
+    
+    @State private var goToCreateAccount = false
+    @State private var goToForgotPassword = false
+    
     private var isEmailValid: Bool {
-        // Basic check that email contains @ and .
-        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.contains("@") && trimmed.contains(".")
+        email.contains("@") && email.contains(".")
     }
-
+    
     private var canSignIn: Bool {
-        // Sign-in allowed only if valid email and password length >= 6
-        return isEmailValid && password.count >= 6 && !isSigningIn
+        isEmailValid && password.count >= 6 && !isSigningIn
     }
-
-    // MARK: - Body
+    
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // MARK: Background Gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [Color("AccentStart"), Color("AccentEnd")]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+        ZStack {
+            
+            LinearGradient.esPrimaryGradient
                 .ignoresSafeArea()
-
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // MARK: App Logo and Title
-                        VStack(spacing: 8) {
-                            Image(systemName: "creditcard.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 72, height: 72)
-                                .foregroundColor(.white)
-                                .shadow(radius: 6)
-
-                            Text("Expense Splitter")
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                        }
-                        .padding(.top, 36)
-
-                        // MARK: - Sign In Card
-                        VStack(spacing: 16) {
-                            // Show Firebase errors if any
-                            if let error = signInError {
-                                Text(error)
+            
+            ScrollView {
+                VStack(spacing: 24) {
+                    
+                    VStack(spacing: 8) {
+                        Image(systemName: "creditcard.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 80, height: 80)
+                            .foregroundStyle(.white)
+                            .shadow(radius: 10)
+                        
+                        Text("Expense Splitter")
+                            .font(.title.bold())
+                            .foregroundStyle(.white)
+                        
+                        Text("Sign in to manage your shared expenses")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
+                    .padding(.top, 40)
+                    
+                    
+                    ESCard {
+                        VStack(spacing: 18) {
+                            
+                            if let errorMessage = errorMessage {
+                                Text(errorMessage)
                                     .foregroundColor(.red)
                                     .multilineTextAlignment(.center)
                                     .font(.footnote)
-                                    .padding(.horizontal)
-                                    .transition(.opacity)
                             }
-
-                            // MARK: Email Field
+                            
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Email")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
-
+                                
                                 TextField("you@example.com", text: $email)
-                                    .keyboardType(.emailAddress)
-                                    .textContentType(.emailAddress)
-                                    .autocapitalization(.none)
                                     .textInputAutocapitalization(.never)
                                     .disableAutocorrection(true)
-                                    .padding()
-                                    .background(Color(uiColor: .systemGray6))
-                                    .cornerRadius(10)
+                                    .keyboardType(.emailAddress)
+                                    .textFieldStyle(ESInputFieldStyle())
                             }
-
-                            // MARK: Password Field
+                            
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack {
                                     Text("Password")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-
                                     Spacer()
-
-                                    Text(password.count < 6 ? "min 6 chars" : "")
-                                        .font(.caption2)
-                                        .foregroundColor(.gray)
-                                }
-
-                                HStack {
-                                    if showPassword {
-                                        TextField("Enter password", text: $password)
-                                            .textContentType(.password)
-                                            .autocapitalization(.none)
-                                            .textInputAutocapitalization(.never)
-                                            .disableAutocorrection(true)
-                                    } else {
-                                        SecureField("Enter password", text: $password)
-                                            .textContentType(.password)
-                                            .autocapitalization(.none)
-                                            .textInputAutocapitalization(.never)
+                                    if password.count > 0 && password.count < 6 {
+                                        Text("min 6 characters")
+                                            .font(.caption2)
+                                            .foregroundColor(.gray)
                                     }
-
-                                    // Eye icon to toggle visibility
-                                    Button(action: { showPassword.toggle() }) {
+                                }
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                
+                                HStack {
+                                    Group {
+                                        if showPassword {
+                                            TextField("Enter password", text: $password)
+                                        } else {
+                                            SecureField("Enter password", text: $password)
+                                        }
+                                    }
+                                    .textInputAutocapitalization(.never)
+                                    
+                                    Button { showPassword.toggle() } label: {
                                         Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
                                             .foregroundColor(.gray)
                                     }
                                 }
-                                .padding()
-                                .background(Color(uiColor: .systemGray6))
-                                .cornerRadius(10)
+                                .textFieldStyle(ESInputFieldStyle())
                             }
-
-                            // MARK: Sign In Button
+                            
+                            
                             Button(action: signInTapped) {
-                                HStack {
+                                HStack(spacing: 10) {
                                     if isSigningIn {
-                                        ProgressView()
-                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        ProgressView().tint(.white)
                                     }
-                                    Text(isSigningIn ? "Signing in..." : "Sign In")
+                                    Text(isSigningIn ? "Signing in…" : "Sign In")
                                         .fontWeight(.semibold)
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(canSignIn ? Color.accentColor : Color.gray.opacity(0.6))
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                                .animation(.easeInOut, value: canSignIn)
                             }
+                            .buttonStyle(ESPrimaryButtonStyle())
                             .disabled(!canSignIn)
-                            .padding(.top, 4)
-
-                            // MARK: Forgot Password / Create Account Links
+                            
                             HStack {
-                                Button(action: { goToForgotPassword = true }) {
+                                Button { goToForgotPassword = true } label: {
                                     Text("Forgot password?")
                                         .font(.footnote)
-                                        .foregroundColor(.accentColor)
+                                        .foregroundColor(.esPrimary)
                                 }
-                                .buttonStyle(.plain)
-
+                                
                                 Spacer()
-
-                                Button(action: { goToCreateAccount = true }) {
+                                
+                                Button { goToCreateAccount = true } label: {
                                     Text("Create account")
                                         .font(.footnote)
                                         .fontWeight(.semibold)
-                                        .foregroundColor(.accentColor)
+                                        .foregroundColor(.esPrimary)
                                 }
-                                .buttonStyle(.plain)
-                            }
-                            .padding(.top, 2)
-                        }
-                        .padding()
-                        .background(.regularMaterial)
-                        .cornerRadius(20)
-                        .shadow(color: Color.black.opacity(0.15), radius: 20, x: 0, y: 10)
-                        .padding(.horizontal)
-
-                        // MARK: Social Sign-in (visual only)
-                        VStack(spacing: 12) {
-                            Text("Or continue with")
-                                .font(.footnote)
-                                .foregroundColor(.white.opacity(0.9))
-
-                            HStack(spacing: 14) {
-                                SignInSocialButton(imageName: "applelogo", title: "Apple")
-                                SignInSocialButton(imageName: "globe", title: "Web")
                             }
                         }
-                        .padding(.top, 8)
-
-                        Spacer(minLength: 18)
-
-                        // MARK: Skip Option (last)
-                        Button(action: { navigateToSkip = true }) {
-                            Text("Skip for now")
-                                .font(.footnote)
-                                .foregroundColor(.white.opacity(0.9))
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 30)
-                        .padding(.bottom, 36)
                     }
-                    .padding(.vertical)
+                    .padding(.horizontal)
                 }
             }
-            // MARK: Navigation Destinations
-            .navigationDestination(isPresented: $goToCreateAccount) {
-                CreateAccountView()
-            }
-            .navigationDestination(isPresented: $goToForgotPassword) {
-                ForgotPasswordView()
-            }
-            .navigationDestination(isPresented: $navigateToHome) {
-                ContentView()
-            }
-            .navigationDestination(isPresented: $navigateToSkip) {
-                ContentView()
-            }
+        }
+        .navigationDestination(isPresented: $goToCreateAccount) {
+            CreateAccountView()
+        }
+        .navigationDestination(isPresented: $goToForgotPassword) {
+            ForgotPasswordView()
         }
     }
-
-    // MARK: - Firebase Sign In Function
+    
+    
+    // MARK: - SIGN IN LOGIC
     private func signInTapped() {
         guard canSignIn else { return }
-
-        // Reset errors & show loading spinner
-        signInError = nil
+        
+        errorMessage = nil
         isSigningIn = true
-
-        // Call Firebase Authentication
-        Auth.auth().signIn(withEmail: email, password: password) { result, error in
+        
+        authService.signIn(email: email, password: password) { result in
             DispatchQueue.main.async {
-                isSigningIn = false
-
-                if let error = error {
-                    // Show Firebase error message
-                    signInError = error.localizedDescription
-                    print("Sign-in failed: \(error.localizedDescription)")
-                } else if let user = result?.user {
-                    // Successful sign in!
-                    print("✅ Signed in as: \(user.email ?? "Unknown email")")
-                    navigateToHome = true
-                } else {
-                    // Should not happen, but good fallback
-                    signInError = "Unexpected error during sign-in. Please try again."
+                self.isSigningIn = false
+                
+                switch result {
+                case .success:
+                    
+                    // ⭐ Ensure user profile exists in database
+                    Task {
+                        if let user = Auth.auth().currentUser {
+                            let userService = UserService()
+                            let exists = try? await userService.fetchUser(uid: user.uid)
+                            
+                            if exists == nil {
+                                try? await userService.saveUserProfile(
+                                    uid: user.uid,
+                                    fullName: user.displayName ?? "Unknown",
+                                    email: user.email ?? ""
+                                )
+                            }
+                        }
+                    }
+                    
+                case .failure(let error):
+                    self.errorMessage = error.localizedDescription
                 }
             }
         }
     }
 }
 
-// MARK: - Small Social Button Component
-fileprivate struct SignInSocialButton: View {
-    let imageName: String
-    let title: String
-
-    var body: some View {
-        Button(action: {}) {
-            HStack {
-                Image(systemName: imageName)
-                    .frame(width: 18, height: 18)
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-            }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 14)
-            .background(Color.white.opacity(0.12))
-            .foregroundColor(.white)
-            .cornerRadius(10)
-        }
-        .buttonStyle(.plain)
+#Preview {
+    NavigationStack {
+        SignInView()
+            .environmentObject(AuthService.shared)
     }
 }
-
-// MARK: - Preview
-#Preview {
-    SignInView()
-}
-
