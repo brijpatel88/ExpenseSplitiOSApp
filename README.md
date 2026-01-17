@@ -120,11 +120,19 @@ open expenseSplitApp.xcodeproj
 
 ## 🔒 License
 
-**Proprietary License**  
-© 2026 Brijesh Patel. All rights reserved.
+Copyright (c) 2026 Brijesh Patel
 
-This project is provided for viewing and evaluation only.
-Commercial use, redistribution, or modification is prohibited without explicit written permission.
+All rights reserved.
+
+This project is proprietary software provided for educational and portfolio
+demonstration purposes only.
+
+No permission is granted to use, copy, modify, distribute, or create
+derivative works of this software for commercial or non-commercial purposes
+without explicit written consent from the author.
+
+The author retains full ownership and reserves the right to reuse, relicense,
+or commercialize this codebase in the future.
 
 ---
 
